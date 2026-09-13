@@ -8,7 +8,9 @@ import Avatar from '@/components/Avatar'
 const ITENS = [
   { href: '/livros', rotulo: 'Catálogo' },
   { href: '/emprestimos', rotulo: 'Empréstimos' },
+  { href: '/reservas', rotulo: 'Reservas' },
   { href: '/usuarios', rotulo: 'Usuários' },
+  { href: '/painel', rotulo: 'Painel' },
 ]
 
 export default function Cabecalho() {

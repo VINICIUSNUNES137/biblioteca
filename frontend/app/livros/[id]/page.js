@@ -11,7 +11,7 @@ import Aviso from '@/components/Aviso'
 import Botao from '@/components/Botao'
 import Campo from '@/components/Campo'
 import CapaLivro from '@/components/CapaLivro'
-import EmptyState, { ArteLivros } from '@/components/EmptyState'
+import EmptyState, { ArteFila, ArteLivros } from '@/components/EmptyState'
 import FormularioLivro from '@/components/FormularioLivro'
 import Lozenge from '@/components/Lozenge'
 import Modal from '@/components/Modal'
@@ -27,10 +27,12 @@ export default function PaginaLivro() {
   const [sucesso, setSucesso] = useState('')
   const [codigo, setCodigo] = useState('')
   const [modalEmprestimo, setModalEmprestimo] = useState(null)
+  const [modalReserva, setModalReserva] = useState(false)
   const [modalDevolucao, setModalDevolucao] = useState(null)
   const [dataDevolucao, setDataDevolucao] = useState(paraInputData(new Date()))
   const [historico, setHistorico] = useState([])
   const [leitorId, setLeitorId] = useState('')
+  const [leitorReservaId, setLeitorReservaId] = useState('')
   const [confirmacaoExcluir, setConfirmacaoExcluir] = useState(false)
   const [editando, setEditando] = useState(false)
   const [formulario, setFormulario] = useState(FORMULARIO_LIVRO_VAZIO)
@@ -95,6 +97,19 @@ export default function PaginaLivro() {
     }
   }
 
+  async function reservar() {
+    setErro('')
+    try {
+      const reserva = await post('/reservas', { livroId: Number(id), leitorId: Number(leitorReservaId) })
+      setModalReserva(false)
+      setLeitorReservaId('')
+      setSucesso(`${reserva.leitor.nome} entrou na fila: ${reserva.posicao}º lugar.`)
+      await carregar()
+    } catch (e) {
+      setErro(e.message)
+    }
+  }
+
   function abrirDevolucao(linha) {
     setErro('')
     setModalDevolucao({
@@ -116,7 +131,11 @@ export default function PaginaLivro() {
       if (resultado.diasAtraso > 0) {
         partes.push(`Atraso de ${resultado.diasAtraso} dia(s). Multa: ${formatarDinheiro(resultado.multa)}.`)
       }
-      partes.push('Exemplar voltou para o acervo.')
+      if (resultado.reservaAtendida) {
+        partes.push(`Exemplar separado para ${resultado.reservaAtendida.leitor.nome}.`)
+      } else {
+        partes.push('Exemplar voltou para o acervo.')
+      }
       setModalDevolucao(null)
       setSucesso(partes.join(' '))
       await carregar()
@@ -175,8 +194,12 @@ export default function PaginaLivro() {
           {livro.sinopse && <p className="sinopse">{livro.sinopse}</p>}
           <p className="sinopse" style={{ marginBottom: 20 }}>
             {livro.totalExemplares} exemplares · {livro.disponiveis} disponíveis
+            {livro.reservas?.length ? ` · ${livro.reservas.length} na fila` : ''}
           </p>
           <div className="acoes">
+            {livro.disponiveis === 0 && livro.totalExemplares > 0 && (
+              <Botao onClick={() => setModalReserva(true)}>Colocar na fila</Botao>
+            )}
             <Botao variante="sutil" onClick={abrirEdicao}>
               Editar
             </Botao>
@@ -187,7 +210,7 @@ export default function PaginaLivro() {
         </div>
       </div>
 
-      {!(modalDevolucao || modalEmprestimo || editando) && (
+      {!(modalDevolucao || modalEmprestimo || modalReserva || editando) && (
         <>
           <Aviso tipo="erro" aoFechar={() => setErro('')}>
             {erro}
@@ -237,6 +260,9 @@ export default function PaginaLivro() {
                   {linha.situacao === 'DISPONIVEL' && (
                     <Botao onClick={() => setModalEmprestimo(linha)}>Emprestar</Botao>
                   )}
+                  {linha.situacao === 'RESERVADO' && (
+                    <Botao onClick={() => setModalEmprestimo(linha)}>Entregar reserva</Botao>
+                  )}
                   {linha.situacao === 'EMPRESTADO' && linha.emprestimoAtivo && (
                     <Botao onClick={() => abrirDevolucao(linha)}>Devolver</Botao>
                   )}
@@ -253,6 +279,25 @@ export default function PaginaLivro() {
               ilustracao={<ArteLivros />}
               titulo="Nenhum exemplar neste título"
               descricao="Cada cópia física tem um tombo. Cadastre a primeira para poder emprestar."
+            />
+          }
+        />
+      </div>
+
+      <div className="cartao">
+        <h2>Fila de reservas</h2>
+        <Tabela
+          colunas={[
+            { chave: 'posicao', titulo: 'Posição' },
+            { chave: 'leitor', titulo: 'Leitor', render: (linha) => linha.leitor.nome },
+            { chave: 'criadoEm', titulo: 'Entrou em', render: (linha) => formatarData(linha.criadoEm) },
+          ]}
+          linhas={livro.reservas || []}
+          vazio={
+            <EmptyState
+              ilustracao={<ArteFila />}
+              titulo="Ninguém na fila"
+              descricao="Quando todas as cópias estiverem emprestadas, coloque o leitor na fila por ordem de chegada."
             />
           }
         />
@@ -290,7 +335,7 @@ export default function PaginaLivro() {
             <EmptyState
               ilustracao={<ArteLivros />}
               titulo="Nenhuma transação neste título"
-              descricao="Empréstimos e devoluções aparecem aqui, na ordem em que aconteceram."
+              descricao="Empréstimos, devoluções e movimentos da fila aparecem aqui, na ordem em que aconteceram."
             />
           }
         />
@@ -325,7 +370,7 @@ export default function PaginaLivro() {
 
       <Modal
         aberto={Boolean(modalEmprestimo)}
-        titulo="Emprestar exemplar"
+        titulo={modalEmprestimo?.situacao === 'RESERVADO' ? 'Entregar reserva' : 'Emprestar exemplar'}
         descricao={`Exemplar ${modalEmprestimo?.codigo}. O prazo de 14 dias é calculado pelo sistema.`}
         aoFechar={() => setModalEmprestimo(null)}
         rodape={
@@ -342,6 +387,38 @@ export default function PaginaLivro() {
         <Aviso tipo="erro">{erro}</Aviso>
         <Campo as="select" rotulo="Leitor" value={leitorId} onChange={(e) => setLeitorId(e.target.value)}>
           <option value="">Selecione quem leva o livro</option>
+          {leitores.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.nome}
+            </option>
+          ))}
+        </Campo>
+      </Modal>
+
+      <Modal
+        aberto={modalReserva}
+        titulo="Colocar leitor na fila"
+        descricao="Só é possível reservar quando não há exemplar livre."
+        aoFechar={() => setModalReserva(false)}
+        rodape={
+          <>
+            <Botao variante="sutil" onClick={() => setModalReserva(false)}>
+              Cancelar
+            </Botao>
+            <Botao onClick={reservar} disabled={!leitorReservaId}>
+              Confirmar reserva
+            </Botao>
+          </>
+        }
+      >
+        <Aviso tipo="erro">{erro}</Aviso>
+        <Campo
+          as="select"
+          rotulo="Leitor"
+          value={leitorReservaId}
+          onChange={(e) => setLeitorReservaId(e.target.value)}
+        >
+          <option value="">Selecione quem entra na fila</option>
           {leitores.map((item) => (
             <option key={item.id} value={item.id}>
               {item.nome}
@@ -377,7 +454,7 @@ export default function PaginaLivro() {
           </>
         }
       >
-        <p>O catálogo deixa de listar este título.</p>
+        <p>O catálogo deixa de listar este título. As reservas da fila também somem.</p>
       </Modal>
     </>
   )

@@ -7,6 +7,8 @@ const errorHandler = require('./middlewares/errorHandler')
 const usuarioRotas = require('./routes/usuario.routes')
 const livroRotas = require('./routes/livro.routes')
 const emprestimoRotas = require('./routes/emprestimo.routes')
+const reservaRotas = require('./routes/reserva.routes')
+const painelRotas = require('./routes/painel.routes')
 
 const app = express()
 const PORTA = process.env.PORT || 3001
@@ -20,6 +22,8 @@ app.get('/saude', (req, res) => res.json({ ok: true }))
 app.use(usuarioRotas)
 app.use(livroRotas)
 app.use(emprestimoRotas)
+app.use(reservaRotas)
+app.use(painelRotas)
 
 app.use(errorHandler)
 

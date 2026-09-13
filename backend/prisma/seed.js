@@ -41,6 +41,7 @@ function gravarCapa({ arquivo, fundo, faixa, titulo, autor }) {
 
 async function main() {
   await prisma.movimentacao.deleteMany()
+  await prisma.reserva.deleteMany()
   await prisma.emprestimo.deleteMany()
   await prisma.exemplar.deleteMany()
   await prisma.livro.deleteMany()
@@ -195,6 +196,13 @@ async function main() {
     },
   })
 
+  await prisma.reserva.create({
+    data: { livroId: sertao.id, leitorId: bruno.id, criadoEm: diasAtras(2) },
+  })
+  await prisma.reserva.create({
+    data: { livroId: sertao.id, leitorId: fernanda.id, criadoEm: diasAtras(1) },
+  })
+
   const exCapitaes = capitaes.exemplares[0]
   const saidaCapitaes = diasAtras(20)
   const voltaCapitaes = diasAtras(8)
@@ -246,6 +254,20 @@ async function main() {
     detalhe: `Saída do exemplar ${exEduardo.codigo} para ${eduardo.nome}.`,
   })
   await log({
+    tipo: 'RESERVA',
+    livroId: sertao.id,
+    leitorId: bruno.id,
+    data: diasAtras(2),
+    detalhe: `${bruno.nome} entrou na fila (1º lugar).`,
+  })
+  await log({
+    tipo: 'RESERVA',
+    livroId: sertao.id,
+    leitorId: fernanda.id,
+    data: diasAtras(1),
+    detalhe: `${fernanda.nome} entrou na fila (2º lugar).`,
+  })
+  await log({
     tipo: 'EMPRESTIMO',
     livroId: capitaes.id,
     exemplarId: exCapitaes.id,
@@ -263,7 +285,7 @@ async function main() {
     multa: 0,
   })
 
-  console.log('Banco semeado com empréstimos de demonstração.')
+  console.log('Banco semeado com capas.')
   console.log(`Bibliotecária: ${carla.nome}`)
 }
 

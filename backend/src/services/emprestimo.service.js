@@ -57,7 +57,15 @@ async function emprestar({ exemplarId, leitorId }) {
   const exemplar = await prisma.exemplar.findUnique({ where: { id: Number(exemplarId) } })
   if (!exemplar) throw new ErroDeNegocio('EXEMPLAR_NAO_ENCONTRADO', 'Exemplar não existe.', 404)
 
-  if (exemplar.situacao !== 'DISPONIVEL') {
+  if (exemplar.situacao === 'RESERVADO') {
+    const reservaAtendida = await prisma.reserva.findFirst({
+      where: { livroId: exemplar.livroId, leitorId: Number(leitorId), situacao: 'ATENDIDA' },
+      orderBy: { atendidaEm: 'desc' },
+    })
+    if (!reservaAtendida) {
+      throw new ErroDeNegocio('EXEMPLAR_RESERVADO', 'Este exemplar está reservado para outro leitor.', 409)
+    }
+  } else if (exemplar.situacao !== 'DISPONIVEL') {
     throw new ErroDeNegocio('EXEMPLAR_INDISPONIVEL', 'Este exemplar não está disponível.', 409)
   }
 
@@ -151,9 +159,31 @@ async function devolver(id, dados = {}) {
       data: { devolvidoEm, multa },
     })
 
+    const proxima = await tx.reserva.findFirst({
+      where: { livroId: emp.exemplar.livroId, situacao: 'AGUARDANDO' },
+      orderBy: { criadoEm: 'asc' },
+      include: { leitor: true },
+    })
+
+    if (proxima) {
+      await tx.reserva.update({
+        where: { id: proxima.id },
+        data: { situacao: 'ATENDIDA', atendidaEm: devolvidoEm },
+      })
+      await movimentacao.registrar(tx, {
+        tipo: 'RESERVA_ATENDIDA',
+        livroId: emp.exemplar.livroId,
+        exemplarId: emp.exemplarId,
+        leitorId: proxima.leitorId,
+        data: devolvidoEm,
+        detalhe: `Exemplar ${emp.exemplar.codigo} separado para ${proxima.leitor.nome}.`,
+      })
+    }
+
+    const situacao = proxima ? 'RESERVADO' : 'DISPONIVEL'
     await tx.exemplar.update({
       where: { id: emp.exemplarId },
-      data: { situacao: 'DISPONIVEL' },
+      data: { situacao },
     })
 
     await movimentacao.registrar(tx, {
@@ -170,8 +200,10 @@ async function devolver(id, dados = {}) {
       devolvidoEm,
       diasAtraso,
       multa,
-      exemplar: { id: emp.exemplarId, situacao: 'DISPONIVEL' },
-      reservaAtendida: null,
+      exemplar: { id: emp.exemplarId, situacao },
+      reservaAtendida: proxima
+        ? { id: proxima.id, leitorId: proxima.leitorId, leitor: proxima.leitor }
+        : null,
     }
   })
 
