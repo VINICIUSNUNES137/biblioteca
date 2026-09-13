@@ -22,7 +22,8 @@ export default function PaginaLivro() {
   const { usuario } = usarUsuario()
   const [livro, setLivro] = useState(null)
   const [erro, setErro] = useState('')
-  const [codigo, setCodigo] = useState('')
+  const [sucesso, setSucesso] = useState('')
+  const [quantidade, setQuantidade] = useState(1)
   const [confirmacaoExcluir, setConfirmacaoExcluir] = useState(false)
   const [editando, setEditando] = useState(false)
   const [formulario, setFormulario] = useState(FORMULARIO_LIVRO_VAZIO)
@@ -40,9 +41,16 @@ export default function PaginaLivro() {
 
   async function adicionarExemplar() {
     setErro('')
+    setSucesso('')
     try {
-      await post(`/livros/${id}/exemplares`, { codigo })
-      setCodigo('')
+      const criados = await post(`/livros/${id}/exemplares`, { quantidade: Number(quantidade) })
+      const tombos = criados.map((item) => item.codigo)
+      setSucesso(
+        tombos.length === 1
+          ? `Exemplar ${tombos[0]} cadastrado.`
+          : `Exemplares ${tombos[0]} a ${tombos[tombos.length - 1]} cadastrados.`
+      )
+      setQuantidade(1)
       await carregar()
     } catch (e) {
       setErro(e.message)
@@ -133,9 +141,14 @@ export default function PaginaLivro() {
       </div>
 
       {!editando && (
-        <Aviso tipo="erro" aoFechar={() => setErro('')}>
-          {erro}
-        </Aviso>
+        <>
+          <Aviso tipo="erro" aoFechar={() => setErro('')}>
+            {erro}
+          </Aviso>
+          <Aviso tipo="sucesso" aoFechar={() => setSucesso('')}>
+            {sucesso}
+          </Aviso>
+        </>
       )}
 
       <div className="cartao">
@@ -144,13 +157,16 @@ export default function PaginaLivro() {
         </div>
         <div className="acoes" style={{ marginBottom: 16 }}>
           <Campo
-            rotulo="Código (tombo)"
-            placeholder="EX-0010"
-            value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
+            rotulo="Quantos adicionar"
+            type="number"
+            min="1"
+            max="50"
+            ajuda="O tombo (EX-0001, EX-0002…) é gerado pelo sistema."
+            value={quantidade}
+            onChange={(e) => setQuantidade(e.target.value)}
           />
-          <Botao onClick={adicionarExemplar} disabled={!codigo}>
-            Adicionar exemplar
+          <Botao onClick={adicionarExemplar} disabled={Number(quantidade) < 1}>
+            {Number(quantidade) > 1 ? 'Adicionar exemplares' : 'Adicionar exemplar'}
           </Botao>
         </div>
         <Tabela
@@ -176,7 +192,7 @@ export default function PaginaLivro() {
             <EmptyState
               ilustracao={<ArteLivros />}
               titulo="Nenhum exemplar neste título"
-              descricao="Cada cópia física tem um tombo. Cadastre a primeira para o livro existir no acervo."
+              descricao="Cada cópia física ganha um tombo automático. Cadastre a primeira para o livro existir no acervo."
             />
           }
         />

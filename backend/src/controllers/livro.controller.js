@@ -26,8 +26,8 @@ async function excluir(req, res) {
 }
 
 async function adicionarExemplar(req, res) {
-  const exemplar = await servico.adicionarExemplar(req.params.id, req.body.codigo)
-  res.status(201).json(exemplar)
+  const exemplares = await servico.adicionarExemplar(req.params.id, req.body.quantidade)
+  res.status(201).json(exemplares)
 }
 
 async function excluirExemplar(req, res) {

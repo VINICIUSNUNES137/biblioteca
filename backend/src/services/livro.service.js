@@ -156,23 +156,48 @@ async function excluir(id) {
   await prisma.livro.delete({ where: { id: Number(id) } })
 }
 
-async function adicionarExemplar(livroId, codigo) {
+function formatarTombo(numero) {
+  return `EX-${String(numero).padStart(4, '0')}`
+}
+
+async function proximoNumeroTombo(tx) {
+  const lista = await tx.exemplar.findMany({ select: { codigo: true } })
+  let max = 0
+  for (const item of lista) {
+    const match = String(item.codigo).match(/^EX-(\d+)$/i)
+    if (match) max = Math.max(max, Number(match[1]))
+  }
+  return max + 1
+}
+
+async function adicionarExemplar(livroId, quantidade = 1) {
+  const qtd = Number(quantidade)
+  if (!Number.isInteger(qtd) || qtd < 1) {
+    throw new ErroDeNegocio('DADOS_INVALIDOS', 'Informe quantos exemplares adicionar.', 400)
+  }
+  if (qtd > 50) {
+    throw new ErroDeNegocio('DADOS_INVALIDOS', 'Dá para adicionar no máximo 50 de uma vez.', 400)
+  }
+
   const livro = await prisma.livro.findUnique({ where: { id: Number(livroId) } })
   if (!livro) throw new ErroDeNegocio('NAO_ENCONTRADO', 'Livro não encontrado.', 404)
-  if (!codigo || !String(codigo).trim()) {
-    throw new ErroDeNegocio('DADOS_INVALIDOS', 'Código do exemplar é obrigatório.', 400)
-  }
-  try {
-    return await prisma.exemplar.create({
-      data: {
-        codigo: String(codigo).trim(),
-        livroId: Number(livroId),
-        situacao: 'DISPONIVEL',
-      },
-    })
-  } catch (erro) {
-    lancarSeDuplicado(erro, { codigo: 'Código de exemplar já existe.' })
-  }
+
+  return prisma.$transaction(async (tx) => {
+    const inicio = await proximoNumeroTombo(tx)
+    const criados = []
+    for (let i = 0; i < qtd; i++) {
+      criados.push(
+        await tx.exemplar.create({
+          data: {
+            codigo: formatarTombo(inicio + i),
+            livroId: Number(livroId),
+            situacao: 'DISPONIVEL',
+          },
+        })
+      )
+    }
+    return criados
+  })
 }
 
 async function excluirExemplar(id) {
