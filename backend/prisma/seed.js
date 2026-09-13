@@ -6,6 +6,12 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const pastaCapas = path.join(__dirname, '../uploads/capas')
 
+function diasAtras(quantidade) {
+  const data = new Date()
+  data.setDate(data.getDate() - quantidade)
+  return data
+}
+
 function escapar(texto) {
   return String(texto)
     .replace(/&/g, '&amp;')
@@ -34,6 +40,8 @@ function gravarCapa({ arquivo, fundo, faixa, titulo, autor }) {
 }
 
 async function main() {
+  await prisma.movimentacao.deleteMany()
+  await prisma.emprestimo.deleteMany()
   await prisma.exemplar.deleteMany()
   await prisma.livro.deleteMany()
   await prisma.usuario.deleteMany()
@@ -47,23 +55,23 @@ async function main() {
   const carla = await prisma.usuario.create({
     data: { nome: 'Carla Mendes', email: 'carla@biblioteca.local', perfil: 'BIBLIOTECARIO' },
   })
-  await prisma.usuario.create({
+  const ana = await prisma.usuario.create({
     data: { nome: 'Ana Silva', email: 'ana@leitor.local', perfil: 'LEITOR' },
   })
-  await prisma.usuario.create({
+  const bruno = await prisma.usuario.create({
     data: { nome: 'Bruno Costa', email: 'bruno@leitor.local', perfil: 'LEITOR' },
   })
-  await prisma.usuario.create({
+  const diana = await prisma.usuario.create({
     data: { nome: 'Diana Souza', email: 'diana@leitor.local', perfil: 'LEITOR' },
   })
-  await prisma.usuario.create({
+  const eduardo = await prisma.usuario.create({
     data: { nome: 'Eduardo Lima', email: 'eduardo@leitor.local', perfil: 'LEITOR' },
   })
-  await prisma.usuario.create({
+  const fernanda = await prisma.usuario.create({
     data: { nome: 'Fernanda Dias', email: 'fernanda@leitor.local', perfil: 'LEITOR' },
   })
 
-  await prisma.livro.create({
+  const casmurro = await prisma.livro.create({
     data: {
       titulo: 'Dom Casmurro',
       autor: 'Machado de Assis',
@@ -76,9 +84,10 @@ async function main() {
       sinopse: 'Bento Santiago relembra o amor por Capitu e a dúvida que nunca o abandonou. Um retrato da memória, do ciúme e da ambiguidade.',
       exemplares: { create: [{ codigo: 'EX-0001' }, { codigo: 'EX-0002' }] },
     },
+    include: { exemplares: true },
   })
 
-  await prisma.livro.create({
+  const cortico = await prisma.livro.create({
     data: {
       titulo: 'O Cortiço',
       autor: 'Aluísio Azevedo',
@@ -91,9 +100,10 @@ async function main() {
       sinopse: 'A vida coletiva num cortiço do Rio de Janeiro, com ambição, desejo e a força do meio sobre as pessoas.',
       exemplares: { create: [{ codigo: 'EX-0003' }] },
     },
+    include: { exemplares: true },
   })
 
-  await prisma.livro.create({
+  const sertao = await prisma.livro.create({
     data: {
       titulo: 'Grande Sertão: Veredas',
       autor: 'João Guimarães Rosa',
@@ -106,6 +116,7 @@ async function main() {
       sinopse: 'Riobaldo narra sua travessia pelo sertão, o pacto, o amor e a pergunta que atravessa o livro: o diabo existe?',
       exemplares: { create: [{ codigo: 'EX-0004' }, { codigo: 'EX-0005' }] },
     },
+    include: { exemplares: true },
   })
 
   await prisma.livro.create({
@@ -123,7 +134,7 @@ async function main() {
     },
   })
 
-  await prisma.livro.create({
+  const capitaes = await prisma.livro.create({
     data: {
       titulo: 'Capitães da Areia',
       autor: 'Jorge Amado',
@@ -136,9 +147,123 @@ async function main() {
       sinopse: 'Um bando de meninos de rua vive o cais de Salvador. Aventura, abandono e a cidade vista de baixo.',
       exemplares: { create: [{ codigo: 'EX-0009' }] },
     },
+    include: { exemplares: true },
   })
 
-  console.log('Banco semeado com o catálogo.')
+  const exAna = casmurro.exemplares.find((e) => e.codigo === 'EX-0001')
+  const exBruno = cortico.exemplares[0]
+  const exDiana = sertao.exemplares.find((e) => e.codigo === 'EX-0004')
+  const exEduardo = sertao.exemplares.find((e) => e.codigo === 'EX-0005')
+
+  await prisma.exemplar.update({ where: { id: exAna.id }, data: { situacao: 'EMPRESTADO' } })
+  await prisma.emprestimo.create({
+    data: {
+      exemplarId: exAna.id,
+      leitorId: ana.id,
+      emprestadoEm: diasAtras(24),
+      previstoPara: diasAtras(10),
+    },
+  })
+
+  await prisma.exemplar.update({ where: { id: exBruno.id }, data: { situacao: 'EMPRESTADO' } })
+  await prisma.emprestimo.create({
+    data: {
+      exemplarId: exBruno.id,
+      leitorId: bruno.id,
+      emprestadoEm: diasAtras(3),
+      previstoPara: diasAtras(-11),
+    },
+  })
+
+  await prisma.exemplar.update({ where: { id: exDiana.id }, data: { situacao: 'EMPRESTADO' } })
+  await prisma.emprestimo.create({
+    data: {
+      exemplarId: exDiana.id,
+      leitorId: diana.id,
+      emprestadoEm: diasAtras(5),
+      previstoPara: diasAtras(-9),
+    },
+  })
+
+  await prisma.exemplar.update({ where: { id: exEduardo.id }, data: { situacao: 'EMPRESTADO' } })
+  await prisma.emprestimo.create({
+    data: {
+      exemplarId: exEduardo.id,
+      leitorId: eduardo.id,
+      emprestadoEm: diasAtras(2),
+      previstoPara: diasAtras(-12),
+    },
+  })
+
+  const exCapitaes = capitaes.exemplares[0]
+  const saidaCapitaes = diasAtras(20)
+  const voltaCapitaes = diasAtras(8)
+  await prisma.emprestimo.create({
+    data: {
+      exemplarId: exCapitaes.id,
+      leitorId: fernanda.id,
+      emprestadoEm: saidaCapitaes,
+      previstoPara: diasAtras(6),
+      devolvidoEm: voltaCapitaes,
+      multa: 0,
+    },
+  })
+
+  async function log(dados) {
+    await prisma.movimentacao.create({ data: dados })
+  }
+
+  await log({
+    tipo: 'EMPRESTIMO',
+    livroId: casmurro.id,
+    exemplarId: exAna.id,
+    leitorId: ana.id,
+    data: diasAtras(24),
+    detalhe: `Saída do exemplar ${exAna.codigo} para ${ana.nome}.`,
+  })
+  await log({
+    tipo: 'EMPRESTIMO',
+    livroId: cortico.id,
+    exemplarId: exBruno.id,
+    leitorId: bruno.id,
+    data: diasAtras(3),
+    detalhe: `Saída do exemplar ${exBruno.codigo} para ${bruno.nome}.`,
+  })
+  await log({
+    tipo: 'EMPRESTIMO',
+    livroId: sertao.id,
+    exemplarId: exDiana.id,
+    leitorId: diana.id,
+    data: diasAtras(5),
+    detalhe: `Saída do exemplar ${exDiana.codigo} para ${diana.nome}.`,
+  })
+  await log({
+    tipo: 'EMPRESTIMO',
+    livroId: sertao.id,
+    exemplarId: exEduardo.id,
+    leitorId: eduardo.id,
+    data: diasAtras(2),
+    detalhe: `Saída do exemplar ${exEduardo.codigo} para ${eduardo.nome}.`,
+  })
+  await log({
+    tipo: 'EMPRESTIMO',
+    livroId: capitaes.id,
+    exemplarId: exCapitaes.id,
+    leitorId: fernanda.id,
+    data: saidaCapitaes,
+    detalhe: `Saída do exemplar ${exCapitaes.codigo} para ${fernanda.nome}.`,
+  })
+  await log({
+    tipo: 'DEVOLUCAO',
+    livroId: capitaes.id,
+    exemplarId: exCapitaes.id,
+    leitorId: fernanda.id,
+    data: voltaCapitaes,
+    detalhe: `Devolução do exemplar ${exCapitaes.codigo} por ${fernanda.nome}.`,
+    multa: 0,
+  })
+
+  console.log('Banco semeado com empréstimos de demonstração.')
   console.log(`Bibliotecária: ${carla.nome}`)
 }
 

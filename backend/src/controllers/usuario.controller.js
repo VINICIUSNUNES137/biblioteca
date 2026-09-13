@@ -25,4 +25,9 @@ async function excluir(req, res) {
   res.status(204).end()
 }
 
-module.exports = { listar, buscar, criar, atualizar, excluir }
+async function situacao(req, res) {
+  const dados = await servico.situacaoDoLeitor(req.params.id)
+  res.json(dados)
+}
+
+module.exports = { listar, buscar, criar, atualizar, excluir, situacao }

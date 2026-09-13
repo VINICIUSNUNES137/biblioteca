@@ -77,7 +77,15 @@ async function buscarPorId(id) {
   const livro = await prisma.livro.findUnique({
     where: { id: Number(id) },
     include: {
-      exemplares: { orderBy: { codigo: 'asc' } },
+      exemplares: {
+        include: {
+          emprestimos: {
+            where: { devolvidoEm: null },
+            include: { leitor: true },
+          },
+        },
+        orderBy: { codigo: 'asc' },
+      },
     },
   })
 
@@ -89,6 +97,14 @@ async function buscarPorId(id) {
       id: exemplar.id,
       codigo: exemplar.codigo,
       situacao: exemplar.situacao,
+      emprestimoAtivo: exemplar.emprestimos[0]
+        ? {
+            id: exemplar.emprestimos[0].id,
+            previstoPara: exemplar.emprestimos[0].previstoPara,
+            emprestadoEm: exemplar.emprestimos[0].emprestadoEm,
+            leitor: exemplar.emprestimos[0].leitor,
+          }
+        : null,
     })),
   }
 }
@@ -179,7 +195,7 @@ async function excluirExemplar(id) {
   const exemplar = await prisma.exemplar.findUnique({ where: { id: Number(id) } })
   if (!exemplar) throw new ErroDeNegocio('NAO_ENCONTRADO', 'Exemplar não encontrado.', 404)
   if (exemplar.situacao !== 'DISPONIVEL') {
-    throw new ErroDeNegocio('EM_USO', 'Só é possível excluir exemplar disponível.', 409)
+    throw new ErroDeNegocio('EM_USO', 'Não é possível excluir um exemplar emprestado.', 409)
   }
   await prisma.exemplar.delete({ where: { id: Number(id) } })
 }

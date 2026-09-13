@@ -1,4 +1,5 @@
 const servico = require('../services/livro.service')
+const movimentacao = require('../services/movimentacao.service')
 
 async function listar(req, res) {
   const livros = await servico.listar(req.query.busca)
@@ -40,6 +41,11 @@ async function enviarCapa(req, res) {
   res.json(livro)
 }
 
+async function historico(req, res) {
+  const lista = await movimentacao.listarPorLivro(req.params.id)
+  res.json(lista)
+}
+
 module.exports = {
   listar,
   buscar,
@@ -49,4 +55,5 @@ module.exports = {
   excluir,
   adicionarExemplar,
   excluirExemplar,
+  historico,
 }
