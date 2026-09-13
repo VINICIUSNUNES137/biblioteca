@@ -1,0 +1,12 @@
+node_modules/
+.next/
+*.log
+.DS_Store
+.env
+backend/.env
+frontend/.env.local
+backend/generated/
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+backend/prisma/*.db
+backend/uploads/capas/
