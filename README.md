@@ -20,6 +20,8 @@ A ordem de merge é essa: livros → usuários → empréstimos → reservas/pai
 Node 18+. Sem Docker. O banco é o arquivo `backend/prisma/dev.db`.
 
 ```bash
+git clone https://github.com/VINICIUSNUNES137/biblioteca.git
+cd biblioteca
 npm run primeiro-uso
 npm run dev
 ```
@@ -27,7 +29,7 @@ npm run dev
 - Front: http://localhost:3000
 - API: http://localhost:3001
 
-`primeiro-uso` instala as três pastas (`/` + `backend/` + `frontend/`), cria as tabelas e semeia o catálogo de demonstração.
+`primeiro-uso` instala as dependências, cria `backend/.env` e `frontend/.env.local` se ainda não existirem, sobe as tabelas e semeia o catálogo de demonstração.
 
 Comandos soltos:
 
