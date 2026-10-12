@@ -5,7 +5,10 @@ import { usePathname } from 'next/navigation'
 import { usarUsuario } from '@/lib/usuario'
 import Avatar from '@/components/Avatar'
 
-const ITENS = [{ href: '/livros', rotulo: 'Catálogo' }]
+const ITENS = [
+  { href: '/livros', rotulo: 'Catálogo' },
+  { href: '/usuarios', rotulo: 'Usuários' },
+]
 
 export default function Cabecalho() {
   const caminho = usePathname()

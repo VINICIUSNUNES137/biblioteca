@@ -47,6 +47,21 @@ async function main() {
   const carla = await prisma.usuario.create({
     data: { nome: 'Carla Mendes', email: 'carla@biblioteca.local', perfil: 'BIBLIOTECARIO' },
   })
+  await prisma.usuario.create({
+    data: { nome: 'Ana Silva', email: 'ana@leitor.local', perfil: 'LEITOR' },
+  })
+  await prisma.usuario.create({
+    data: { nome: 'Bruno Costa', email: 'bruno@leitor.local', perfil: 'LEITOR' },
+  })
+  await prisma.usuario.create({
+    data: { nome: 'Diana Souza', email: 'diana@leitor.local', perfil: 'LEITOR' },
+  })
+  await prisma.usuario.create({
+    data: { nome: 'Eduardo Lima', email: 'eduardo@leitor.local', perfil: 'LEITOR' },
+  })
+  await prisma.usuario.create({
+    data: { nome: 'Fernanda Dias', email: 'fernanda@leitor.local', perfil: 'LEITOR' },
+  })
 
   await prisma.livro.create({
     data: {
