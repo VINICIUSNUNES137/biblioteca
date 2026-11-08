@@ -68,7 +68,31 @@ async function excluir(id) {
       throw new ErroDeNegocio('EM_USO', 'Não é possível excluir o único bibliotecário.', 409)
     }
   }
+  const emprestimosAtivos = await prisma.emprestimo.count({
+    where: { leitorId: Number(id), devolvidoEm: null },
+  })
+  if (emprestimosAtivos > 0) {
+    throw new ErroDeNegocio('EM_USO', 'Usuário tem empréstimo ativo e não pode ser excluído.', 409)
+  }
   await prisma.usuario.delete({ where: { id: Number(id) } })
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, excluir }
+async function situacaoDoLeitor(id) {
+  await buscarPorId(id)
+  const agora = new Date()
+  const pendencias = await prisma.emprestimo.findMany({
+    where: { leitorId: Number(id), devolvidoEm: null, previstoPara: { lt: agora } },
+    include: { exemplar: { include: { livro: true } } },
+    orderBy: { previstoPara: 'asc' },
+  })
+  return {
+    bloqueado: pendencias.length > 0,
+    pendencias: pendencias.map((emp) => ({
+      emprestimoId: emp.id,
+      titulo: emp.exemplar.livro.titulo,
+      previstoPara: emp.previstoPara,
+    })),
+  }
+}
+
+module.exports = { listar, buscarPorId, criar, atualizar, excluir, situacaoDoLeitor }

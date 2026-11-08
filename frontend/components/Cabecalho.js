@@ -7,6 +7,7 @@ import Avatar from '@/components/Avatar'
 
 const ITENS = [
   { href: '/livros', rotulo: 'Catálogo' },
+  { href: '/emprestimos', rotulo: 'Empréstimos' },
   { href: '/usuarios', rotulo: 'Usuários' },
 ]
 
