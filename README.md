@@ -9,8 +9,8 @@ O trabalho está quebrado em quatro fatias. Cada uma entra na `main` por merge d
 | Entrega | Branch | O que entra | Situação |
 | --- | --- | --- | --- |
 | 1. Cadastrar livros | `main` | Catálogo, capa, exemplares | **Na main** |
-| 2. Cadastrar usuários | `entrega-2-usuarios` | CRUD de leitores e bibliotecários | Pronta para merge |
-| 3. Emprestar e devolver | `entrega-3-emprestimos` | Empréstimo, prazo, multa, histórico, data de devolução | Pronta para merge |
+| 2. Cadastrar usuários | `entrega-2-usuarios` | CRUD de leitores e bibliotecários | **Na main** |
+| 3. Emprestar e devolver | `entrega-3-emprestimos` | Empréstimo, prazo, multa, histórico, data de devolução | **Na main** |
 | 4. Reservar e painel | `entrega-4-reservas-painel` | Fila de espera e números do acervo | Pronta para merge |
 
 A ordem de merge é essa: livros → usuários → empréstimos → reservas/painel. Empréstimo precisa de leitor cadastrado; reserva e painel precisam do ciclo de empréstimo.
@@ -38,9 +38,12 @@ npm run setup      # instala dependências
 npm run db:push    # cria/atualiza as tabelas
 npm run db:seed    # dados de demonstração
 npm run dev        # sobe API e Next juntos
+npm run db:studio  # abre o Prisma Studio no navegador (consulta o SQLite)
 ```
 
-Na entrega 1 o sistema assume a bibliotecária do seed (Carla Mendes) para as escritas. Não há login.
+O Prisma Studio sobe em http://localhost:5555 e mostra as tabelas do arquivo `backend/prisma/dev.db`.
+
+Na entrega 3 o sistema assume a bibliotecária do seed (Carla Mendes) para as escritas. Não há login.
 
 ## Pastas
 
