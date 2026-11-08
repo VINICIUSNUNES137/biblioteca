@@ -7,7 +7,8 @@
     "primeiro-uso": "npm run setup && npm run db:push && npm run db:seed",
     "db:push": "npm --prefix backend run db:push",
     "db:seed": "npm --prefix backend run seed",
-    "db:migrate": "npm --prefix backend run db:migrate"
+    "db:migrate": "npm --prefix backend run db:migrate",
+    "db:studio": "npm --prefix backend run db:studio"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

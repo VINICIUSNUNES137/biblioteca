@@ -12,16 +12,20 @@ import CapaLivro from '@/components/CapaLivro'
 import EmptyState, { ArteEmprestimo } from '@/components/EmptyState'
 import Lozenge from '@/components/Lozenge'
 import ModalDevolucao from '@/components/ModalDevolucao'
+import ModalEmprestimo from '@/components/ModalEmprestimo'
 import Tabela from '@/components/Tabela'
 
 export default function PaginaEmprestimos() {
-  const { usuario } = usarUsuario()
+  const { usuario, usuarios } = usarUsuario()
   const [lista, setLista] = useState([])
   const [erro, setErro] = useState('')
   const [sucesso, setSucesso] = useState('')
   const [somenteAtivos, setSomenteAtivos] = useState(true)
   const [modalDevolucao, setModalDevolucao] = useState(null)
   const [dataDevolucao, setDataDevolucao] = useState(paraInputData(new Date()))
+  const [modalEmprestimo, setModalEmprestimo] = useState(false)
+
+  const leitores = (usuarios || []).filter((item) => item.perfil === 'LEITOR')
 
   async function carregar() {
     const query = somenteAtivos ? '?ativos=true' : ''
@@ -32,6 +36,23 @@ export default function PaginaEmprestimos() {
     if (!usuario) return
     carregar().catch((e) => setErro(e.message))
   }, [usuario, somenteAtivos])
+
+  function abrirEmprestimo() {
+    setErro('')
+    setModalEmprestimo(true)
+  }
+
+  async function emprestar({ exemplarId, leitorId, livro }) {
+    setErro('')
+    try {
+      await post('/emprestimos', { exemplarId, leitorId })
+      setModalEmprestimo(false)
+      setSucesso(`Empréstimo de ${livro.titulo} registrado. O prazo de 14 dias é calculado automaticamente.`)
+      await carregar()
+    } catch (e) {
+      setErro(e.message)
+    }
+  }
 
   function abrirDevolucao(linha) {
     setErro('')
@@ -67,20 +88,23 @@ export default function PaginaEmprestimos() {
     <>
       <CabecalhoPagina
         titulo="Empréstimos"
-        descricao="Registre a devolução. Atraso gera multa de R$ 0,50 por dia."
+        descricao="Registre a saída do exemplar. O prazo é de 14 dias; atraso gera multa de R$ 0,50 por dia."
         acoes={
-          <label className="interruptor">
-            <input
-              type="checkbox"
-              checked={somenteAtivos}
-              onChange={(e) => setSomenteAtivos(e.target.checked)}
-            />
-            Somente ativos
-          </label>
+          <>
+            <Botao onClick={abrirEmprestimo}>Emprestar</Botao>
+            <label className="interruptor">
+              <input
+                type="checkbox"
+                checked={somenteAtivos}
+                onChange={(e) => setSomenteAtivos(e.target.checked)}
+              />
+              Somente ativos
+            </label>
+          </>
         }
       />
 
-      {!modalDevolucao && (
+      {!(modalDevolucao || modalEmprestimo) && (
         <>
           <Aviso tipo="erro" aoFechar={() => setErro('')}>
             {erro}
@@ -145,10 +169,19 @@ export default function PaginaEmprestimos() {
               ilustracao={<ArteEmprestimo />}
               titulo={somenteAtivos ? 'Nenhum empréstimo ativo' : 'Nenhum empréstimo ainda'}
               descricao="Quando um exemplar sair, ele aparece nesta lista com o prazo de 14 dias."
+              acao={<Botao onClick={abrirEmprestimo}>Emprestar</Botao>}
             />
           }
         />
       </div>
+
+      <ModalEmprestimo
+        aberto={modalEmprestimo}
+        leitores={leitores}
+        erro={erro}
+        aoFechar={() => setModalEmprestimo(false)}
+        aoConfirmar={emprestar}
+      />
 
       <ModalDevolucao
         aberto={Boolean(modalDevolucao)}
