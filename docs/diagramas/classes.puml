@@ -75,13 +75,13 @@ Usuario "0..1" -- "0..*" Movimentacao
 Reserva "0..1" -- "0..1" Emprestimo : origina
 Reserva "0..1" -- "0..*" Movimentacao
 
-caption A movimentação de separação identifica a reserva. Na retirada,\no empréstimo guarda o vínculo com a reserva que o originou.
+caption A separação deixa a reserva pronta para retirada. Na entrega,\na reserva fica atendida e o empréstimo guarda o vínculo de origem.
 
 legend bottom
   |= Tipo |= Valores |
   | Perfil | LEITOR, BIBLIOTECARIO |
   | SituacaoExemplar | DISPONIVEL, EMPRESTADO, RESERVADO, INDISPONIVEL |
-  | SituacaoReserva | AGUARDANDO, ATENDIDA, CANCELADA |
-  | TipoMovimentacao | EMPRESTIMO, DEVOLUCAO, RESERVA, RESERVA_ATENDIDA, RESERVA_CANCELADA |
+  | SituacaoReserva | AGUARDANDO, PRONTA_PARA_RETIRADA, ATENDIDA, CANCELADA |
+  | TipoMovimentacao | EMPRESTIMO, DEVOLUCAO, RESERVA, RESERVA_SEPARADA, RESERVA_CANCELADA |
 endlegend
 @enduml

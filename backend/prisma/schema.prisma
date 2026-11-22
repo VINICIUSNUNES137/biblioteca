@@ -21,6 +21,7 @@ enum SituacaoExemplar {
 
 enum SituacaoReserva {
   AGUARDANDO
+  PRONTA_PARA_RETIRADA
   ATENDIDA
   CANCELADA
 }
@@ -29,7 +30,7 @@ enum TipoMovimentacao {
   EMPRESTIMO
   DEVOLUCAO
   RESERVA
-  RESERVA_ATENDIDA
+  RESERVA_SEPARADA
   RESERVA_CANCELADA
 }
 

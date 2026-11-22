@@ -40,6 +40,8 @@ export default function PaginaLivro() {
   const [salvando, setSalvando] = useState(false)
 
   const leitores = (usuarios || []).filter((item) => item.perfil === 'LEITOR')
+  const leitorReserva = modalEmprestimo?.leitorReserva
+  const leitorEmprestimoId = leitorReserva?.id ?? Number(leitorId)
 
   async function carregar() {
     const [dados, logs] = await Promise.all([get(`/livros/${id}`), get(`/livros/${id}/historico`)])
@@ -91,10 +93,17 @@ export default function PaginaLivro() {
     }
   }
 
+  function abrirEmprestimo(exemplar) {
+    setErro('')
+    setSucesso('')
+    setLeitorId('')
+    setModalEmprestimo(exemplar)
+  }
+
   async function emprestar() {
     setErro('')
     try {
-      await post('/emprestimos', { exemplarId: modalEmprestimo.id, leitorId: Number(leitorId) })
+      await post('/emprestimos', { exemplarId: modalEmprestimo.id, leitorId: leitorEmprestimoId })
       setModalEmprestimo(null)
       setLeitorId('')
       setSucesso('Empréstimo registrado. O prazo de 14 dias é calculado automaticamente.')
@@ -137,8 +146,8 @@ export default function PaginaLivro() {
       if (resultado.diasAtraso > 0) {
         partes.push(`Atraso de ${resultado.diasAtraso} dia(s). Multa: ${formatarDinheiro(resultado.multa)}.`)
       }
-      if (resultado.reservaAtendida) {
-        partes.push(`Exemplar separado para ${resultado.reservaAtendida.leitor.nome}.`)
+      if (resultado.reservaPronta) {
+        partes.push(`Reserva pronta para retirada por ${resultado.reservaPronta.leitor.nome}.`)
       } else {
         partes.push('Exemplar voltou para o acervo.')
       }
@@ -256,10 +265,13 @@ export default function PaginaLivro() {
             {
               chave: 'com',
               titulo: 'Com quem',
-              render: (linha) =>
-                linha.emprestimoAtivo
-                  ? `${linha.emprestimoAtivo.leitor.nome} · até ${formatarData(linha.emprestimoAtivo.previstoPara)}`
-                  : '—',
+              render: (linha) => {
+                if (linha.situacao === 'RESERVADO') {
+                  return linha.leitorReserva ? `Reservado para ${linha.leitorReserva.nome}` : 'Leitor não identificado'
+                }
+                const emprestimo = linha.emprestimoAtivo
+                return emprestimo ? `${emprestimo.leitor.nome} · até ${formatarData(emprestimo.previstoPara)}` : '—'
+              },
             },
             {
               chave: 'acoes',
@@ -267,10 +279,10 @@ export default function PaginaLivro() {
               render: (linha) => (
                 <div className="acoes">
                   {linha.situacao === 'DISPONIVEL' && (
-                    <Botao onClick={() => setModalEmprestimo(linha)}>Emprestar</Botao>
+                    <Botao onClick={() => abrirEmprestimo(linha)}>Emprestar</Botao>
                   )}
                   {linha.situacao === 'RESERVADO' && (
-                    <Botao onClick={() => setModalEmprestimo(linha)}>Entregar reserva</Botao>
+                    <Botao onClick={() => abrirEmprestimo(linha)} disabled={!linha.leitorReserva}>Entregar reserva</Botao>
                   )}
                   {linha.situacao === 'EMPRESTADO' && linha.emprestimoAtivo && (
                     <Botao onClick={() => abrirDevolucao(linha)}>Devolver</Botao>
@@ -387,21 +399,25 @@ export default function PaginaLivro() {
             <Botao variante="sutil" onClick={() => setModalEmprestimo(null)}>
               Cancelar
             </Botao>
-            <Botao onClick={emprestar} disabled={!leitorId}>
-              Confirmar empréstimo
+            <Botao onClick={emprestar} disabled={!leitorEmprestimoId}>
+              {leitorReserva ? 'Confirmar entrega' : 'Confirmar empréstimo'}
             </Botao>
           </>
         }
       >
         <Aviso tipo="erro">{erro}</Aviso>
-        <Campo as="select" rotulo="Leitor" value={leitorId} onChange={(e) => setLeitorId(e.target.value)}>
-          <option value="">Selecione quem leva o livro</option>
-          {leitores.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.nome}
-            </option>
-          ))}
-        </Campo>
+        {leitorReserva ? (
+          <Aviso>Separado para <strong>{leitorReserva.nome}</strong>.</Aviso>
+        ) : (
+          <Campo as="select" rotulo="Leitor" value={leitorId} onChange={(e) => setLeitorId(e.target.value)}>
+            <option value="">Selecione quem leva o livro</option>
+            {leitores.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.nome}
+              </option>
+            ))}
+          </Campo>
+        )}
       </Modal>
 
       {modalReserva && (

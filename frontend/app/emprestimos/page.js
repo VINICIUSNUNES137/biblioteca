@@ -75,8 +75,8 @@ export default function PaginaEmprestimos() {
       if (resultado.diasAtraso > 0) {
         partes.push(`Atraso de ${resultado.diasAtraso} dia(s). Multa: ${formatarDinheiro(resultado.multa)}.`)
       }
-      if (resultado.reservaAtendida) {
-        partes.push(`Exemplar separado para ${resultado.reservaAtendida.leitor.nome}.`)
+      if (resultado.reservaPronta) {
+        partes.push(`Reserva pronta para retirada por ${resultado.reservaPronta.leitor.nome}.`)
       } else {
         partes.push('Exemplar voltou para o acervo.')
       }

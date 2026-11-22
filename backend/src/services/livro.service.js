@@ -4,6 +4,7 @@ const { lancarSeDuplicado } = require('../util/duplicado')
 const fs = require('fs')
 const path = require('path')
 const { pastaCapas } = require('../middlewares/uploadCapa')
+const { consultaSeparacaoReserva } = require('./movimentacao.service')
 
 function validarLivro({ titulo, autor, isbn, ano }) {
   if (!titulo || !String(titulo).trim()) {
@@ -83,20 +84,23 @@ async function buscarPorId(id) {
             where: { devolvidoEm: null },
             include: { leitor: true },
           },
+          movimentacoes: {
+            ...consultaSeparacaoReserva,
+            take: 1,
+            select: { leitor: { select: { id: true, nome: true } } },
+          },
         },
         orderBy: { codigo: 'asc' },
       },
       reservas: {
-        where: { situacao: { in: ['AGUARDANDO', 'ATENDIDA'] } },
+        where: { situacao: 'AGUARDANDO' },
         include: { leitor: true },
-        orderBy: { criadoEm: 'asc' },
+        orderBy: [{ criadoEm: 'asc' }, { id: 'asc' }],
       },
     },
   })
 
   if (!livro) throw new ErroDeNegocio('NAO_ENCONTRADO', 'Livro não encontrado.', 404)
-
-  const fila = livro.reservas.filter((r) => r.situacao === 'AGUARDANDO')
 
   return {
     ...resumirLivro(livro),
@@ -104,6 +108,7 @@ async function buscarPorId(id) {
       id: exemplar.id,
       codigo: exemplar.codigo,
       situacao: exemplar.situacao,
+      leitorReserva: exemplar.situacao === 'RESERVADO' ? exemplar.movimentacoes[0]?.leitor ?? null : null,
       emprestimoAtivo: exemplar.emprestimos[0]
         ? {
             id: exemplar.emprestimos[0].id,
@@ -113,7 +118,7 @@ async function buscarPorId(id) {
           }
         : null,
     })),
-    reservas: fila.map((r, indice) => ({ ...r, posicao: indice + 1 })),
+    reservas: livro.reservas.map((r, indice) => ({ ...r, posicao: indice + 1 })),
   }
 }
 

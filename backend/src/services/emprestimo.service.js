@@ -41,7 +41,7 @@ function serializarEmprestimo(emprestimo) {
   }
 }
 
-async function emprestar({ exemplarId, leitorId }) {
+async function emprestar({ exemplarId, leitorId, reservaId: reservaSolicitadaId }) {
   if (!exemplarId || !leitorId) {
     throw new ErroDeNegocio('DADOS_INVALIDOS', 'Informe o exemplar e o leitor.', 400)
   }
@@ -67,8 +67,8 @@ async function emprestar({ exemplarId, leitorId }) {
 
     if (exemplar.situacao === 'RESERVADO') {
       const separacao = await tx.movimentacao.findFirst({
-        where: { exemplarId: exemplar.id, tipo: 'RESERVA_ATENDIDA' },
-        orderBy: { id: 'desc' },
+        ...movimentacao.consultaSeparacaoReserva,
+        where: { ...movimentacao.consultaSeparacaoReserva.where, exemplarId: exemplar.id },
         select: { leitorId: true, reservaId: true },
       })
       if (separacao?.leitorId !== leitor.id) {
@@ -77,6 +77,10 @@ async function emprestar({ exemplarId, leitorId }) {
       reservaId = separacao.reservaId
     } else if (exemplar.situacao !== 'DISPONIVEL') {
       throw new ErroDeNegocio('EXEMPLAR_INDISPONIVEL', 'Este exemplar não está disponível.', 409)
+    }
+
+    if (reservaSolicitadaId != null && reservaId !== Number(reservaSolicitadaId)) {
+      throw new ErroDeNegocio('RESERVA_INDISPONIVEL', 'Esta reserva não está mais disponível para retirada.', 409)
     }
 
     const alterados = await tx.exemplar.updateMany({
@@ -98,6 +102,15 @@ async function emprestar({ exemplarId, leitorId }) {
         exemplar: { include: { livro: true } },
       },
     })
+    if (reservaId != null) {
+      const atendidas = await tx.reserva.updateMany({
+        where: { id: reservaId, situacao: 'PRONTA_PARA_RETIRADA' },
+        data: { situacao: 'ATENDIDA', atendidaEm: emprestimo.emprestadoEm },
+      })
+      if (!atendidas.count) {
+        throw new ErroDeNegocio('RESERVA_INDISPONIVEL', 'Esta reserva não está mais disponível para retirada.', 409)
+      }
+    }
     await movimentacao.registrar(tx, {
       tipo: 'EMPRESTIMO',
       livroId: emprestimo.exemplar.livroId,
@@ -178,10 +191,10 @@ async function devolver(id, dados = {}) {
     if (proxima) {
       await tx.reserva.update({
         where: { id: proxima.id },
-        data: { situacao: 'ATENDIDA', atendidaEm: devolvidoEm },
+        data: { situacao: 'PRONTA_PARA_RETIRADA' },
       })
       await movimentacao.registrar(tx, {
-        tipo: 'RESERVA_ATENDIDA',
+        tipo: 'RESERVA_SEPARADA',
         livroId: emp.exemplar.livroId,
         exemplarId: emp.exemplarId,
         leitorId: proxima.leitorId,
@@ -207,14 +220,17 @@ async function devolver(id, dados = {}) {
       multa,
     })
 
+    const reservaPronta = proxima
+      ? { id: proxima.id, leitorId: proxima.leitorId, leitor: proxima.leitor }
+      : null
+
     return {
       devolvidoEm,
       diasAtraso,
       multa,
       exemplar: { id: emp.exemplarId, situacao },
-      reservaAtendida: proxima
-        ? { id: proxima.id, leitorId: proxima.leitorId, leitor: proxima.leitor }
-        : null,
+      reservaPronta,
+      reservaAtendida: reservaPronta,
     }
   })
 

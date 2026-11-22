@@ -36,6 +36,8 @@ Em um banco com dados, use `npm run setup` e `npm run db:push` para atualizar o 
 
 O seed inclui uma reserva já retirada, vinculada ao empréstimo, e outra aguardando na fila. Em um banco anterior, `npm run db:push` também recupera o ID da reserva nas movimentações de separação que têm uma correspondência inequívoca.
 
+Ao devolver uma cópia com fila, a próxima reserva fica **Pronta para retirada**. O bibliotecário pode confirmar a entrega na tela **Reservas**. A retirada confirmada cria o empréstimo e muda a reserva para **Atendida**.
+
 Comandos soltos:
 
 ```bash

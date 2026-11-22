@@ -1,6 +1,11 @@
 const prisma = require('../prisma')
 const ErroDeNegocio = require('../erros/ErroDeNegocio')
 
+const consultaSeparacaoReserva = {
+  where: { tipo: 'RESERVA_SEPARADA' },
+  orderBy: { id: 'desc' },
+}
+
 async function registrar(db, dados) {
   const cliente = db || prisma
   return cliente.movimentacao.create({
@@ -33,4 +38,4 @@ async function listarPorLivro(livroId) {
   }))
 }
 
-module.exports = { registrar, listarPorLivro }
+module.exports = { registrar, listarPorLivro, consultaSeparacaoReserva }

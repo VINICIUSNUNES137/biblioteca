@@ -50,10 +50,10 @@ async function criarReserva(tx, livroId, leitorId) {
   }
 
   const jaTem = await tx.reserva.findFirst({
-    where: { livroId, leitorId, situacao: 'AGUARDANDO' },
+    where: { livroId, leitorId, situacao: { in: ['AGUARDANDO', 'PRONTA_PARA_RETIRADA'] } },
   })
   if (jaTem) {
-    throw new ErroDeNegocio('RESERVA_DUPLICADA', 'Este leitor já está na fila deste livro.', 409)
+    throw new ErroDeNegocio('RESERVA_DUPLICADA', 'Este leitor já tem uma reserva em aberto para este livro.', 409)
   }
 
   const jaEmprestado = await tx.emprestimo.findFirst({
@@ -87,31 +87,41 @@ async function criarReserva(tx, livroId, leitorId) {
 
 async function comPosicao(reservas) {
   const resultado = []
-  for (const reserva of reservas) {
+  for (const { movimentacoes, ...reserva } of reservas) {
     resultado.push({
       ...reserva,
       posicao: reserva.situacao === 'AGUARDANDO' ? await posicaoNaFila(reserva) : null,
+      exemplarSeparado: reserva.situacao === 'PRONTA_PARA_RETIRADA' && movimentacoes[0]?.exemplar?.situacao === 'RESERVADO'
+        ? movimentacoes[0].exemplar
+        : null,
     })
   }
   return resultado
 }
 
-async function listarTodas(situacao) {
+async function buscarReservas(where) {
   const reservas = await prisma.reserva.findMany({
-    where: situacao ? { situacao } : {},
-    include: { livro: true, leitor: true },
+    where,
+    include: {
+      livro: true,
+      leitor: true,
+      movimentacoes: {
+        ...movimentacao.consultaSeparacaoReserva,
+        take: 1,
+        select: { exemplar: { select: { id: true, codigo: true, situacao: true } } },
+      },
+    },
     orderBy: { criadoEm: 'desc' },
   })
   return comPosicao(reservas)
 }
 
+async function listarTodas(situacao) {
+  return buscarReservas(situacao ? { situacao } : {})
+}
+
 async function listarPorLeitor(leitorId) {
-  const reservas = await prisma.reserva.findMany({
-    where: { leitorId: Number(leitorId) },
-    include: { livro: true, leitor: true },
-    orderBy: { criadoEm: 'desc' },
-  })
-  return comPosicao(reservas)
+  return buscarReservas({ leitorId: Number(leitorId) })
 }
 
 async function listarFilaDoLivro(livroId) {

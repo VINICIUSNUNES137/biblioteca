@@ -39,7 +39,7 @@ rectangle "Sistema Biblioteca" {
   usecase "Identificar exemplar" as IdentificarExemplar
   usecase "Selecionar leitor" as SelecionarLeitor
   usecase "Registrar devolução" as Devolver
-  usecase "Atender próxima reserva" as Atender
+  usecase "Separar exemplar para\na próxima reserva" as Separar
   usecase "Consultar fila de reservas" as Fila
   usecase "Criar reserva" as CriarReserva
   usecase "Cancelar reserva" as CancelarReserva
@@ -47,8 +47,8 @@ rectangle "Sistema Biblioteca" {
   usecase "Consultar painel do acervo" as Painel
 
   note right of Entregar
-    Ao concluir a retirada, o empréstimo
-    registra a reserva de origem identificada.
+    A entrega marca a reserva como atendida
+    e registra o empréstimo vinculado.
   end note
 }
 
@@ -72,7 +72,7 @@ Bibliotecario -- CriarReserva
 Bibliotecario -- CancelarReserva
 Bibliotecario -- Entregar
 Bibliotecario -- Painel
-Atender .up.> Devolver : <<extend>>\n[há reserva aguardando]
+Separar .up.> Devolver : <<extend>>\n[há reserva aguardando]
 Emprestar .down.> IdentificarExemplar : <<include>>
 Emprestar .down.> SelecionarLeitor : <<include>>
 @enduml
