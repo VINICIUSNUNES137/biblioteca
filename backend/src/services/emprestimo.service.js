@@ -7,8 +7,8 @@ const PRAZO_DIAS = 14
 const LIMITE_ATIVOS = 3
 const VALOR_DIA = 0.5
 
-async function garantirLeitorLiberado(leitorId) {
-  const atrasados = await prisma.emprestimo.count({
+async function garantirLeitorLiberado(leitorId, db = prisma) {
+  const atrasados = await db.emprestimo.count({
     where: { leitorId: Number(leitorId), devolvidoEm: null, previstoPara: { lt: new Date() } },
   })
   if (atrasados > 0) {
@@ -57,10 +57,6 @@ async function emprestar({ exemplarId, leitorId }) {
   const exemplar = await prisma.exemplar.findUnique({ where: { id: Number(exemplarId) } })
   if (!exemplar) throw new ErroDeNegocio('EXEMPLAR_NAO_ENCONTRADO', 'Exemplar não existe.', 404)
 
-  if (exemplar.situacao !== 'DISPONIVEL') {
-    throw new ErroDeNegocio('EXEMPLAR_INDISPONIVEL', 'Este exemplar não está disponível.', 409)
-  }
-
   const ativos = await prisma.emprestimo.count({
     where: { leitorId: Number(leitorId), devolvidoEm: null },
   })
@@ -69,10 +65,26 @@ async function emprestar({ exemplarId, leitorId }) {
   }
 
   const criado = await prisma.$transaction(async (tx) => {
-    await tx.exemplar.update({
-      where: { id: Number(exemplarId) },
+    if (exemplar.situacao === 'RESERVADO') {
+      const separacao = await tx.movimentacao.findFirst({
+        where: { exemplarId: exemplar.id, tipo: 'RESERVA_ATENDIDA' },
+        orderBy: { id: 'desc' },
+        select: { leitorId: true },
+      })
+      if (separacao?.leitorId !== leitor.id) {
+        throw new ErroDeNegocio('EXEMPLAR_RESERVADO', 'Este exemplar está reservado para outro leitor.', 409)
+      }
+    } else if (exemplar.situacao !== 'DISPONIVEL') {
+      throw new ErroDeNegocio('EXEMPLAR_INDISPONIVEL', 'Este exemplar não está disponível.', 409)
+    }
+
+    const alterados = await tx.exemplar.updateMany({
+      where: { id: exemplar.id, situacao: exemplar.situacao },
       data: { situacao: 'EMPRESTADO' },
     })
+    if (!alterados.count) {
+      throw new ErroDeNegocio('EXEMPLAR_INDISPONIVEL', 'Este exemplar não está mais disponível.', 409)
+    }
     const emprestimo = await tx.emprestimo.create({
       data: {
         exemplarId: Number(exemplarId),
@@ -146,14 +158,39 @@ async function devolver(id, dados = {}) {
   const multa = diasAtraso * VALOR_DIA
 
   const resultado = await prisma.$transaction(async (tx) => {
-    await tx.emprestimo.update({
-      where: { id: Number(id) },
+    const encerrados = await tx.emprestimo.updateMany({
+      where: { id: emp.id, devolvidoEm: null },
       data: { devolvidoEm, multa },
     })
+    if (!encerrados.count) {
+      throw new ErroDeNegocio('JA_DEVOLVIDO', 'Este empréstimo já foi encerrado.', 409)
+    }
 
+    const proxima = await tx.reserva.findFirst({
+      where: { livroId: emp.exemplar.livroId, situacao: 'AGUARDANDO' },
+      orderBy: [{ criadoEm: 'asc' }, { id: 'asc' }],
+      include: { leitor: true },
+    })
+
+    if (proxima) {
+      await tx.reserva.update({
+        where: { id: proxima.id },
+        data: { situacao: 'ATENDIDA', atendidaEm: devolvidoEm },
+      })
+      await movimentacao.registrar(tx, {
+        tipo: 'RESERVA_ATENDIDA',
+        livroId: emp.exemplar.livroId,
+        exemplarId: emp.exemplarId,
+        leitorId: proxima.leitorId,
+        data: devolvidoEm,
+        detalhe: `Exemplar ${emp.exemplar.codigo} separado para ${proxima.leitor.nome}.`,
+      })
+    }
+
+    const situacao = proxima ? 'RESERVADO' : 'DISPONIVEL'
     await tx.exemplar.update({
       where: { id: emp.exemplarId },
-      data: { situacao: 'DISPONIVEL' },
+      data: { situacao },
     })
 
     await movimentacao.registrar(tx, {
@@ -170,8 +207,10 @@ async function devolver(id, dados = {}) {
       devolvidoEm,
       diasAtraso,
       multa,
-      exemplar: { id: emp.exemplarId, situacao: 'DISPONIVEL' },
-      reservaAtendida: null,
+      exemplar: { id: emp.exemplarId, situacao },
+      reservaAtendida: proxima
+        ? { id: proxima.id, leitorId: proxima.leitorId, leitor: proxima.leitor }
+        : null,
     }
   })
 

@@ -75,7 +75,11 @@ export default function PaginaEmprestimos() {
       if (resultado.diasAtraso > 0) {
         partes.push(`Atraso de ${resultado.diasAtraso} dia(s). Multa: ${formatarDinheiro(resultado.multa)}.`)
       }
-      partes.push('Exemplar voltou para o acervo.')
+      if (resultado.reservaAtendida) {
+        partes.push(`Exemplar separado para ${resultado.reservaAtendida.leitor.nome}.`)
+      } else {
+        partes.push('Exemplar voltou para o acervo.')
+      }
       setModalDevolucao(null)
       setSucesso(partes.join(' '))
       await carregar()
@@ -88,7 +92,7 @@ export default function PaginaEmprestimos() {
     <>
       <CabecalhoPagina
         titulo="Empréstimos"
-        descricao="Registre a saída do exemplar. O prazo é de 14 dias; atraso gera multa de R$ 0,50 por dia."
+        descricao="Registre empréstimos e devoluções. O prazo é de 14 dias e a multa é de R$ 0,50 por dia de atraso."
         acoes={
           <>
             <Botao onClick={abrirEmprestimo}>Emprestar</Botao>

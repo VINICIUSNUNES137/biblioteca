@@ -9,6 +9,8 @@ const ITENS = [
   { href: '/livros', rotulo: 'Catálogo' },
   { href: '/usuarios', rotulo: 'Usuários' },
   { href: '/emprestimos', rotulo: 'Empréstimos' },
+  { href: '/reservas', rotulo: 'Reservas' },
+  { href: '/painel', rotulo: 'Painel' },
 ]
 
 export default function Cabecalho() {

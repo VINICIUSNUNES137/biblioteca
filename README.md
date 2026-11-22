@@ -11,7 +11,7 @@ O trabalho está quebrado em quatro fatias. Cada uma entra na `main` por merge d
 | 1. Cadastrar livros | `main` | Catálogo, capa, exemplares | **Na main** |
 | 2. Cadastrar usuários | `entrega-2-usuarios` | CRUD de leitores e bibliotecários | **Na main** |
 | 3. Emprestar e devolver | `entrega-3-emprestimos` | Empréstimo, prazo, multa, histórico, data de devolução | **Na main** |
-| 4. Reservar e painel | `entrega-4-reservas-painel` | Fila de espera e números do acervo | Pronta para merge |
+| 4. Reservar e painel | `entrega-4-reservas-painel` | Fila de espera e números do acervo | **Na main** |
 
 A ordem de merge é essa: livros → usuários → empréstimos → reservas/painel. Empréstimo precisa de leitor cadastrado; reserva e painel precisam do ciclo de empréstimo.
 
@@ -23,13 +23,16 @@ Node 18+. Sem Docker. O banco é o arquivo `backend/prisma/dev.db`.
 git clone https://github.com/VINICIUSNUNES137/biblioteca.git
 cd biblioteca
 npm run primeiro-uso
-npm run dev
+npm run dev:completo
 ```
 
 - Front: http://localhost:3000
 - API: http://localhost:3001
+- Prisma Studio: http://localhost:5555
 
 `primeiro-uso` instala as dependências, cria `backend/.env` e `frontend/.env.local` se ainda não existirem, sobe as tabelas e semeia o catálogo de demonstração.
+
+Em um banco com dados, use `npm run setup` e `npm run db:push` para atualizar o esquema. O seed substitui os registros pelos dados de demonstração.
 
 Comandos soltos:
 

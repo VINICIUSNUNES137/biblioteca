@@ -3,12 +3,13 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -n back,front -c cyan,magenta \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "dev:completo": "concurrently -n back,front,studio -c cyan,magenta,green \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\" \"npm run db:studio -- --browser none\"",
     "setup": "npm install && npm --prefix backend install && npm --prefix frontend install && node scripts/copiar-env.js",
     "primeiro-uso": "npm run setup && npm run db:push && npm run db:seed",
     "db:push": "npm --prefix backend run db:push",
     "db:seed": "npm --prefix backend run seed",
     "db:migrate": "npm --prefix backend run db:migrate",
-    "db:studio": "npm --prefix backend run db:studio"
+    "db:studio": "npm --prefix backend run db:studio --"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

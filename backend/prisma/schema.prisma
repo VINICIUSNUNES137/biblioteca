@@ -19,6 +19,12 @@ enum SituacaoExemplar {
   INDISPONIVEL
 }
 
+enum SituacaoReserva {
+  AGUARDANDO
+  ATENDIDA
+  CANCELADA
+}
+
 enum TipoMovimentacao {
   EMPRESTIMO
   DEVOLUCAO
@@ -28,44 +34,46 @@ enum TipoMovimentacao {
 }
 
 model Usuario {
-  id            Int            @id @default(autoincrement())
-  nome          String
-  email         String         @unique
-  perfil        Perfil         @default(LEITOR)
-  criadoEm      DateTime       @default(now())
-  emprestimos   Emprestimo[]
-  movimentacoes Movimentacao[]
+  id             Int            @id @default(autoincrement())
+  nome           String
+  email          String         @unique
+  perfil         Perfil         @default(LEITOR)
+  criadoEm       DateTime       @default(now())
+  emprestimos    Emprestimo[]
+  reservas       Reserva[]
+  movimentacoes  Movimentacao[]
 
   @@map("usuario")
 }
 
 model Livro {
-  id            Int            @id @default(autoincrement())
+  id            Int        @id @default(autoincrement())
   titulo        String
   autor         String
-  isbn          String         @unique
+  isbn          String     @unique
   ano           Int
   editora       String?
   categoria     String?
   sinopse       String?
   numeroPaginas Int?
   capa          String?
-  criadoEm      DateTime       @default(now())
-  exemplares    Exemplar[]
-  movimentacoes Movimentacao[]
+  criadoEm      DateTime   @default(now())
+  exemplares     Exemplar[]
+  reservas       Reserva[]
+  movimentacoes  Movimentacao[]
 
   @@map("livro")
 }
 
 model Exemplar {
-  id            Int            @id @default(autoincrement())
-  codigo        String         @unique
-  situacao      SituacaoExemplar @default(DISPONIVEL)
-  livroId       Int
-  livro         Livro          @relation(fields: [livroId], references: [id])
-  criadoEm      DateTime       @default(now())
-  emprestimos   Emprestimo[]
-  movimentacoes Movimentacao[]
+  id          Int              @id @default(autoincrement())
+  codigo      String           @unique
+  situacao    SituacaoExemplar @default(DISPONIVEL)
+  livroId     Int
+  livro       Livro            @relation(fields: [livroId], references: [id])
+  criadoEm    DateTime         @default(now())
+  emprestimos    Emprestimo[]
+  movimentacoes  Movimentacao[]
 
   @@map("exemplar")
 }
@@ -84,6 +92,20 @@ model Emprestimo {
   @@index([leitorId])
   @@index([devolvidoEm])
   @@map("emprestimo")
+}
+
+model Reserva {
+  id         Int             @id @default(autoincrement())
+  livroId    Int
+  livro      Livro           @relation(fields: [livroId], references: [id])
+  leitorId   Int
+  leitor     Usuario         @relation(fields: [leitorId], references: [id])
+  situacao   SituacaoReserva @default(AGUARDANDO)
+  criadoEm   DateTime        @default(now())
+  atendidaEm DateTime?
+
+  @@index([livroId, situacao, criadoEm])
+  @@map("reserva")
 }
 
 model Movimentacao {
