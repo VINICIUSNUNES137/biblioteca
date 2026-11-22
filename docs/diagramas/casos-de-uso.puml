@@ -1,0 +1,78 @@
+@startuml
+left to right direction
+title Biblioteca | Diagrama de casos de uso
+skinparam nodesep 18
+skinparam shadowing false
+skinparam defaultFontName Segoe UI
+skinparam ArrowColor #526783
+skinparam actor {
+  BorderColor #526783
+  FontColor #172B4D
+}
+skinparam usecase {
+  BackgroundColor #F4F8FF
+  BorderColor #526783
+  FontColor #172B4D
+}
+skinparam rectangle {
+  BorderColor #526783
+  FontColor #172B4D
+}
+
+actor "Bibliotecário" as Bibliotecario
+
+rectangle "Sistema Biblioteca" {
+  usecase "Consultar catálogo e\ndisponibilidade" as Catalogo
+  usecase "Consultar detalhes do livro" as Detalhes
+  usecase "Cadastrar livro" as CadastrarLivro
+  usecase "Editar livro" as EditarLivro
+  usecase "Excluir livro" as ExcluirLivro
+  usecase "Cadastrar exemplares" as CadastrarExemplares
+  usecase "Excluir exemplar" as ExcluirExemplar
+  usecase "Consultar usuários" as ConsultarUsuarios
+  usecase "Cadastrar usuário" as CadastrarUsuario
+  usecase "Editar usuário" as EditarUsuario
+  usecase "Excluir usuário" as ExcluirUsuario
+  usecase "Consultar empréstimos" as ConsultarEmprestimos
+  usecase "Consultar histórico do livro" as Historico
+  usecase "Registrar empréstimo" as Emprestar
+  usecase "Identificar exemplar" as IdentificarExemplar
+  usecase "Selecionar leitor" as SelecionarLeitor
+  usecase "Registrar devolução" as Devolver
+  usecase "Atender próxima reserva" as Atender
+  usecase "Consultar fila de reservas" as Fila
+  usecase "Criar reserva" as CriarReserva
+  usecase "Cancelar reserva" as CancelarReserva
+  usecase "Entregar exemplar reservado" as Entregar
+  usecase "Consultar painel do acervo" as Painel
+
+  note right of Entregar
+    Ao concluir a retirada, o empréstimo
+    registra a reserva de origem identificada.
+  end note
+}
+
+Bibliotecario -- Catalogo
+Bibliotecario -- Detalhes
+Bibliotecario -- CadastrarLivro
+Bibliotecario -- EditarLivro
+Bibliotecario -- ExcluirLivro
+Bibliotecario -- CadastrarExemplares
+Bibliotecario -- ExcluirExemplar
+Bibliotecario -- ConsultarUsuarios
+Bibliotecario -- CadastrarUsuario
+Bibliotecario -- EditarUsuario
+Bibliotecario -- ExcluirUsuario
+Bibliotecario -- ConsultarEmprestimos
+Bibliotecario -- Historico
+Bibliotecario -- Emprestar
+Bibliotecario -- Devolver
+Bibliotecario -- Fila
+Bibliotecario -- CriarReserva
+Bibliotecario -- CancelarReserva
+Bibliotecario -- Entregar
+Bibliotecario -- Painel
+Atender .up.> Devolver : <<extend>>\n[há reserva aguardando]
+Emprestar .down.> IdentificarExemplar : <<include>>
+Emprestar .down.> SelecionarLeitor : <<include>>
+@enduml

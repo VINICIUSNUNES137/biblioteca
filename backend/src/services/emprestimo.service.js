@@ -54,26 +54,27 @@ async function emprestar({ exemplarId, leitorId }) {
 
   await garantirLeitorLiberado(leitorId)
 
-  const exemplar = await prisma.exemplar.findUnique({ where: { id: Number(exemplarId) } })
-  if (!exemplar) throw new ErroDeNegocio('EXEMPLAR_NAO_ENCONTRADO', 'Exemplar não existe.', 404)
-
-  const ativos = await prisma.emprestimo.count({
-    where: { leitorId: Number(leitorId), devolvidoEm: null },
-  })
-  if (ativos >= LIMITE_ATIVOS) {
-    throw new ErroDeNegocio('LIMITE_ATINGIDO', `Leitor já tem ${LIMITE_ATIVOS} empréstimos ativos.`, 409)
-  }
-
   const criado = await prisma.$transaction(async (tx) => {
+    const exemplar = await tx.exemplar.findUnique({ where: { id: Number(exemplarId) } })
+    if (!exemplar) throw new ErroDeNegocio('EXEMPLAR_NAO_ENCONTRADO', 'Exemplar não existe.', 404)
+
+    const ativos = await tx.emprestimo.count({ where: { leitorId: leitor.id, devolvidoEm: null } })
+    if (ativos >= LIMITE_ATIVOS) {
+      throw new ErroDeNegocio('LIMITE_ATINGIDO', `Leitor já tem ${LIMITE_ATIVOS} empréstimos ativos.`, 409)
+    }
+
+    let reservaId = null
+
     if (exemplar.situacao === 'RESERVADO') {
       const separacao = await tx.movimentacao.findFirst({
         where: { exemplarId: exemplar.id, tipo: 'RESERVA_ATENDIDA' },
         orderBy: { id: 'desc' },
-        select: { leitorId: true },
+        select: { leitorId: true, reservaId: true },
       })
       if (separacao?.leitorId !== leitor.id) {
         throw new ErroDeNegocio('EXEMPLAR_RESERVADO', 'Este exemplar está reservado para outro leitor.', 409)
       }
+      reservaId = separacao.reservaId
     } else if (exemplar.situacao !== 'DISPONIVEL') {
       throw new ErroDeNegocio('EXEMPLAR_INDISPONIVEL', 'Este exemplar não está disponível.', 409)
     }
@@ -89,6 +90,7 @@ async function emprestar({ exemplarId, leitorId }) {
       data: {
         exemplarId: Number(exemplarId),
         leitorId: Number(leitorId),
+        reservaId,
         previstoPara: emDias(PRAZO_DIAS),
       },
       include: {
@@ -101,6 +103,7 @@ async function emprestar({ exemplarId, leitorId }) {
       livroId: emprestimo.exemplar.livroId,
       exemplarId: emprestimo.exemplarId,
       leitorId: emprestimo.leitorId,
+      reservaId,
       data: emprestimo.emprestadoEm,
       detalhe: `Saída do exemplar ${emprestimo.exemplar.codigo} para ${emprestimo.leitor.nome}.`,
     })
@@ -182,6 +185,7 @@ async function devolver(id, dados = {}) {
         livroId: emp.exemplar.livroId,
         exemplarId: emp.exemplarId,
         leitorId: proxima.leitorId,
+        reservaId: proxima.id,
         data: devolvidoEm,
         detalhe: `Exemplar ${emp.exemplar.codigo} separado para ${proxima.leitor.nome}.`,
       })

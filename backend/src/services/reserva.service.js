@@ -77,6 +77,7 @@ async function criarReserva(tx, livroId, leitorId) {
     tipo: 'RESERVA',
     livroId: reserva.livroId,
     leitorId: reserva.leitorId,
+    reservaId: reserva.id,
     data: reserva.criadoEm,
     detalhe: `${reserva.leitor.nome} entrou na fila (${posicao}º lugar).`,
   })
@@ -140,6 +141,7 @@ async function cancelar(id) {
       tipo: 'RESERVA_CANCELADA',
       livroId: reserva.livroId,
       leitorId: reserva.leitorId,
+      reservaId: reserva.id,
       data: new Date(),
       detalhe: `${reserva.leitor.nome} saiu da fila.`,
     })

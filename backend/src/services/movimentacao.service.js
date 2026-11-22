@@ -8,6 +8,7 @@ async function registrar(db, dados) {
       livroId: Number(dados.livroId),
       exemplarId: dados.exemplarId ? Number(dados.exemplarId) : null,
       leitorId: dados.leitorId ? Number(dados.leitorId) : null,
+      reservaId: dados.reservaId ?? null,
       tipo: dados.tipo,
       data: dados.data || new Date(),
       detalhe: dados.detalhe || null,

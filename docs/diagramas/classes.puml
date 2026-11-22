@@ -1,0 +1,87 @@
+@startuml
+title Biblioteca | Diagrama de classes
+hide methods
+hide circle
+skinparam shadowing false
+skinparam defaultFontName Segoe UI
+skinparam ArrowColor #526783
+skinparam class {
+  BackgroundColor #F4F8FF
+  BorderColor #526783
+  FontColor #172B4D
+}
+
+class Livro {
+  id : Int
+  titulo : String
+  autor : String
+  isbn : String {unique}
+  ano : Int
+  editora : String [0..1]
+  categoria : String [0..1]
+  sinopse : String [0..1]
+  numeroPaginas : Int [0..1]
+  capa : String [0..1]
+  criadoEm : DateTime
+}
+
+class Exemplar {
+  id : Int
+  codigo : String {unique}
+  situacao : SituacaoExemplar
+  criadoEm : DateTime
+}
+
+class Usuario {
+  id : Int
+  nome : String
+  email : String {unique}
+  perfil : Perfil
+  criadoEm : DateTime
+}
+
+class Emprestimo {
+  id : Int
+  emprestadoEm : DateTime
+  previstoPara : DateTime
+  devolvidoEm : DateTime [0..1]
+  multa : Float [0..1]
+}
+
+class Reserva {
+  id : Int
+  situacao : SituacaoReserva
+  criadoEm : DateTime
+  atendidaEm : DateTime [0..1]
+}
+
+class Movimentacao {
+  id : Int
+  tipo : TipoMovimentacao
+  data : DateTime
+  detalhe : String [0..1]
+  multa : Float [0..1]
+  criadoEm : DateTime
+}
+
+Livro "1" -- "0..*" Exemplar : possui
+Exemplar "1" -- "0..*" Emprestimo
+Livro "1" -- "0..*" Reserva : fila
+Usuario "1" -- "0..*" Emprestimo : leitor
+Usuario "1" -- "0..*" Reserva : leitor
+Livro "1" -- "0..*" Movimentacao : histórico
+Exemplar "0..1" -- "0..*" Movimentacao
+Usuario "0..1" -- "0..*" Movimentacao
+Reserva "0..1" -- "0..1" Emprestimo : origina
+Reserva "0..1" -- "0..*" Movimentacao
+
+caption A movimentação de separação identifica a reserva. Na retirada,\no empréstimo guarda o vínculo com a reserva que o originou.
+
+legend bottom
+  |= Tipo |= Valores |
+  | Perfil | LEITOR, BIBLIOTECARIO |
+  | SituacaoExemplar | DISPONIVEL, EMPRESTADO, RESERVADO, INDISPONIVEL |
+  | SituacaoReserva | AGUARDANDO, ATENDIDA, CANCELADA |
+  | TipoMovimentacao | EMPRESTIMO, DEVOLUCAO, RESERVA, RESERVA_ATENDIDA, RESERVA_CANCELADA |
+endlegend
+@enduml

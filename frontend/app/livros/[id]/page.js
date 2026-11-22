@@ -16,6 +16,7 @@ import FormularioLivro from '@/components/FormularioLivro'
 import Lozenge from '@/components/Lozenge'
 import Modal from '@/components/Modal'
 import ModalDevolucao from '@/components/ModalDevolucao'
+import ModalReserva from '@/components/ModalReserva'
 import Tabela from '@/components/Tabela'
 
 export default function PaginaLivro() {
@@ -32,7 +33,6 @@ export default function PaginaLivro() {
   const [dataDevolucao, setDataDevolucao] = useState(paraInputData(new Date()))
   const [historico, setHistorico] = useState([])
   const [leitorId, setLeitorId] = useState('')
-  const [leitorReservaId, setLeitorReservaId] = useState('')
   const [confirmacaoExcluir, setConfirmacaoExcluir] = useState(false)
   const [editando, setEditando] = useState(false)
   const [formulario, setFormulario] = useState(FORMULARIO_LIVRO_VAZIO)
@@ -104,17 +104,16 @@ export default function PaginaLivro() {
     }
   }
 
-  async function reservar() {
+  function abrirReserva() {
     setErro('')
-    try {
-      const reserva = await post('/reservas', { livroId: Number(id), leitorId: Number(leitorReservaId) })
-      setModalReserva(false)
-      setLeitorReservaId('')
-      setSucesso(`${reserva.leitor.nome} entrou na fila: ${reserva.posicao}º lugar.`)
-      await carregar()
-    } catch (e) {
-      setErro(e.message)
-    }
+    setSucesso('')
+    setModalReserva(true)
+  }
+
+  function reservaCriada(reserva) {
+    setModalReserva(false)
+    setSucesso(`${reserva.leitor.nome} entrou na fila em ${reserva.posicao}º lugar.`)
+    carregar().catch((e) => setErro(e.message))
   }
 
   function abrirDevolucao(linha) {
@@ -205,7 +204,7 @@ export default function PaginaLivro() {
           </p>
           <div className="acoes">
             {livro.disponiveis === 0 && livro.totalExemplares > 0 && (
-              <Botao onClick={() => setModalReserva(true)}>Colocar na fila</Botao>
+              <Botao onClick={abrirReserva}>Colocar na fila</Botao>
             )}
             <Botao variante="sutil" onClick={abrirEdicao}>
               Editar
@@ -405,37 +404,14 @@ export default function PaginaLivro() {
         </Campo>
       </Modal>
 
-      <Modal
-        aberto={modalReserva}
-        titulo="Colocar leitor na fila"
-        descricao="Só é possível reservar quando não há exemplar livre."
-        aoFechar={() => setModalReserva(false)}
-        rodape={
-          <>
-            <Botao variante="sutil" onClick={() => setModalReserva(false)}>
-              Cancelar
-            </Botao>
-            <Botao onClick={reservar} disabled={!leitorReservaId}>
-              Confirmar reserva
-            </Botao>
-          </>
-        }
-      >
-        <Aviso tipo="erro">{erro}</Aviso>
-        <Campo
-          as="select"
-          rotulo="Leitor"
-          value={leitorReservaId}
-          onChange={(e) => setLeitorReservaId(e.target.value)}
-        >
-          <option value="">Selecione quem entra na fila</option>
-          {leitores.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.nome}
-            </option>
-          ))}
-        </Campo>
-      </Modal>
+      {modalReserva && (
+        <ModalReserva
+          livroInicial={livro}
+          leitores={leitores}
+          aoFechar={() => setModalReserva(false)}
+          aoReservar={reservaCriada}
+        />
+      )}
 
       <ModalDevolucao
         aberto={Boolean(modalDevolucao)}

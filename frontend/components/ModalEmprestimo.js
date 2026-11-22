@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import { get } from '@/lib/api'
 import Aviso from '@/components/Aviso'
-import Avatar from '@/components/Avatar'
 import Botao from '@/components/Botao'
 import CapaLivro from '@/components/CapaLivro'
+import { BuscaEscolha, GradeEscolhaLivros, LivroSelecionado, OpcoesLeitores, correspondeBusca } from '@/components/EscolhasCirculacao'
 import Modal from '@/components/Modal'
 
 export default function ModalEmprestimo({ aberto, leitores, erro, aoFechar, aoConfirmar }) {
@@ -17,7 +17,7 @@ export default function ModalEmprestimo({ aberto, leitores, erro, aoFechar, aoCo
   const [livro, setLivro] = useState(null)
   const [exemplares, setExemplares] = useState([])
   const [exemplarId, setExemplarId] = useState('')
-  const [leitorId, setLeitorId] = useState('')
+  const [leitorId, setLeitorId] = useState(null)
 
   useEffect(() => {
     if (!aberto) return
@@ -25,7 +25,7 @@ export default function ModalEmprestimo({ aberto, leitores, erro, aoFechar, aoCo
     setLivro(null)
     setExemplares([])
     setExemplarId('')
-    setLeitorId('')
+    setLeitorId(null)
     setErroLocal('')
     setConsultou(false)
     setCarregando(true)
@@ -56,13 +56,9 @@ export default function ModalEmprestimo({ aberto, leitores, erro, aoFechar, aoCo
     }
   }
 
-  const termo = busca.trim().toLowerCase()
-  const visiveis = livros.filter((item) => {
-    if (!termo) return true
-    return item.titulo.toLowerCase().includes(termo) || item.autor.toLowerCase().includes(termo)
-  })
+  const visiveis = livros.filter((item) => correspondeBusca(busca, item.titulo, item.autor))
 
-  const leitor = leitores.find((item) => String(item.id) === String(leitorId))
+  const leitor = leitores.find((item) => item.id === leitorId)
   const exemplar = exemplares.find((item) => String(item.id) === String(exemplarId))
 
   return (
@@ -90,7 +86,7 @@ export default function ModalEmprestimo({ aberto, leitores, erro, aoFechar, aoCo
               Trocar livro
             </Botao>
             <Botao
-              onClick={() => aoConfirmar({ exemplarId: Number(exemplarId), leitorId: Number(leitorId), livro })}
+              onClick={() => aoConfirmar({ exemplarId: Number(exemplarId), leitorId, livro })}
               disabled={!exemplarId || !leitorId || carregando}
             >
               Confirmar empréstimo
@@ -112,18 +108,12 @@ export default function ModalEmprestimo({ aberto, leitores, erro, aoFechar, aoCo
 
       {!livro && (
         <>
-          <div className="busca escolha-busca">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-              <path d="M16 16l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <input
-              placeholder="Buscar por título ou autor"
-              value={busca}
-              onChange={(evento) => setBusca(evento.target.value)}
-              aria-label="Buscar livro para emprestar"
-            />
-          </div>
+          <BuscaEscolha
+            rotulo="Buscar livro para emprestar"
+            placeholder="Buscar por título ou autor"
+            valor={busca}
+            aoMudar={setBusca}
+          />
 
           {carregando && <p className="escolha-status">Carregando o acervo…</p>}
 
@@ -135,30 +125,17 @@ export default function ModalEmprestimo({ aberto, leitores, erro, aoFechar, aoCo
             </p>
           )}
 
-          <div className="grade-escolha">
-            {visiveis.map((item) => (
-              <button key={item.id} type="button" className="escolha-livro" onClick={() => escolherLivro(item)}>
-                <CapaLivro capa={item.capa} titulo={item.titulo} tamanho="escolha" />
-                <span className="escolha-livro__corpo">
-                  <strong>{item.titulo}</strong>
-                  <span>{item.autor}</span>
-                  <em>
-                    {item.disponiveis} {item.disponiveis === 1 ? 'cópia livre' : 'cópias livres'}
-                  </em>
-                </span>
-              </button>
-            ))}
-          </div>
+          <GradeEscolhaLivros
+            livros={visiveis}
+            aoEscolher={escolherLivro}
+            rotuloDisponibilidade={(item) => `${item.disponiveis} ${item.disponiveis === 1 ? 'cópia livre' : 'cópias livres'}`}
+          />
         </>
       )}
 
       {livro && (
-        <div className="painel-emprestimo">
-          <div className="painel-emprestimo__livro">
-            <CapaLivro capa={livro.capa} titulo={livro.titulo} tamanho="escolha" />
-            <strong>{livro.titulo}</strong>
-            <span>{livro.autor}</span>
-          </div>
+        <div className="painel-escolha">
+          <LivroSelecionado livro={livro} />
 
           <div>
             <p className="escolha-rotulo">Cópia que sai</p>
@@ -178,23 +155,10 @@ export default function ModalEmprestimo({ aberto, leitores, erro, aoFechar, aoCo
             </div>
 
             <p className="escolha-rotulo">Quem leva</p>
-            <div className="opcoes">
-              {leitores.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`opcao opcao-leitor${String(leitorId) === String(item.id) ? ' is-selecionado' : ''}`}
-                  onClick={() => setLeitorId(String(item.id))}
-                  aria-pressed={String(leitorId) === String(item.id)}
-                >
-                  <Avatar nome={item.nome} />
-                  {item.nome}
-                </button>
-              ))}
-            </div>
+            <OpcoesLeitores leitores={leitores} selecionado={leitorId} aoEscolher={setLeitorId} />
 
             {livro && exemplar && leitor && (
-              <p className="resumo-saida">
+              <p className="resumo-escolha">
                 <CapaLivro capa={livro.capa} titulo={livro.titulo} tamanho="mini" />
                 <span>
                   <strong>{leitor.nome}</strong> leva <strong>{livro.titulo}</strong> ({exemplar.codigo}) por 14 dias.

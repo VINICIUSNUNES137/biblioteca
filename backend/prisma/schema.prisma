@@ -84,6 +84,8 @@ model Emprestimo {
   exemplar     Exemplar  @relation(fields: [exemplarId], references: [id])
   leitorId     Int
   leitor       Usuario   @relation(fields: [leitorId], references: [id])
+  reservaId    Int?      @unique
+  reserva      Reserva?  @relation(fields: [reservaId], references: [id], onDelete: SetNull)
   emprestadoEm DateTime  @default(now())
   previstoPara DateTime
   devolvidoEm  DateTime?
@@ -103,6 +105,8 @@ model Reserva {
   situacao   SituacaoReserva @default(AGUARDANDO)
   criadoEm   DateTime        @default(now())
   atendidaEm DateTime?
+  emprestimo    Emprestimo?
+  movimentacoes Movimentacao[]
 
   @@index([livroId, situacao, criadoEm])
   @@map("reserva")
@@ -116,6 +120,8 @@ model Movimentacao {
   exemplar   Exemplar?         @relation(fields: [exemplarId], references: [id], onDelete: SetNull)
   leitorId   Int?
   leitor     Usuario?          @relation(fields: [leitorId], references: [id], onDelete: SetNull)
+  reservaId  Int?
+  reserva    Reserva?          @relation(fields: [reservaId], references: [id], onDelete: SetNull)
   tipo       TipoMovimentacao
   data       DateTime
   detalhe    String?

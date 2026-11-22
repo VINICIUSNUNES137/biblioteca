@@ -34,6 +34,8 @@ npm run dev:completo
 
 Em um banco com dados, use `npm run setup` e `npm run db:push` para atualizar o esquema. O seed substitui os registros pelos dados de demonstração.
 
+O seed inclui uma reserva já retirada, vinculada ao empréstimo, e outra aguardando na fila. Em um banco anterior, `npm run db:push` também recupera o ID da reserva nas movimentações de separação que têm uma correspondência inequívoca.
+
 Comandos soltos:
 
 ```bash

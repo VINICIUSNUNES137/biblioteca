@@ -1,9 +1,8 @@
 require('dotenv').config()
 const fs = require('fs')
 const path = require('path')
-const { PrismaClient } = require('@prisma/client')
-
-const prisma = new PrismaClient()
+const prisma = require('../src/prisma')
+const emprestimos = require('../src/services/emprestimo.service')
 const pastaCapas = path.join(__dirname, '../uploads/capas')
 
 function diasAtras(quantidade) {
@@ -41,8 +40,8 @@ function gravarCapa({ arquivo, fundo, faixa, titulo, autor }) {
 
 async function main() {
   await prisma.movimentacao.deleteMany()
-  await prisma.reserva.deleteMany()
   await prisma.emprestimo.deleteMany()
+  await prisma.reserva.deleteMany()
   await prisma.exemplar.deleteMany()
   await prisma.livro.deleteMany()
   await prisma.usuario.deleteMany()
@@ -177,7 +176,7 @@ async function main() {
   })
 
   await prisma.exemplar.update({ where: { id: exDiana.id }, data: { situacao: 'EMPRESTADO' } })
-  await prisma.emprestimo.create({
+  const emprestimoDiana = await prisma.emprestimo.create({
     data: {
       exemplarId: exDiana.id,
       leitorId: diana.id,
@@ -196,10 +195,10 @@ async function main() {
     },
   })
 
-  await prisma.reserva.create({
+  const reservaBruno = await prisma.reserva.create({
     data: { livroId: sertao.id, leitorId: bruno.id, criadoEm: diasAtras(2) },
   })
-  await prisma.reserva.create({
+  const reservaFernanda = await prisma.reserva.create({
     data: { livroId: sertao.id, leitorId: fernanda.id, criadoEm: diasAtras(1) },
   })
 
@@ -257,6 +256,7 @@ async function main() {
     tipo: 'RESERVA',
     livroId: sertao.id,
     leitorId: bruno.id,
+    reservaId: reservaBruno.id,
     data: diasAtras(2),
     detalhe: `${bruno.nome} entrou na fila (1º lugar).`,
   })
@@ -264,6 +264,7 @@ async function main() {
     tipo: 'RESERVA',
     livroId: sertao.id,
     leitorId: fernanda.id,
+    reservaId: reservaFernanda.id,
     data: diasAtras(1),
     detalhe: `${fernanda.nome} entrou na fila (2º lugar).`,
   })
@@ -285,7 +286,10 @@ async function main() {
     multa: 0,
   })
 
-  console.log('Banco semeado com capas.')
+  await emprestimos.devolver(emprestimoDiana.id)
+  await emprestimos.emprestar({ exemplarId: exDiana.id, leitorId: bruno.id })
+
+  console.log('Banco semeado com capas, uma retirada vinculada e uma reserva na fila.')
   console.log(`Bibliotecária: ${carla.nome}`)
 }
 

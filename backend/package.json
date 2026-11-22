@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "db:push": "node prisma/preparar-banco.js && prisma db push",
+    "db:push": "node prisma/preparar-banco.js && prisma db push && prisma db execute --schema prisma/schema.prisma --file prisma/vincular-separacoes.sql",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "seed": "node prisma/seed.js",

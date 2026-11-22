@@ -1,0 +1,223 @@
+.painel {
+  --espaco: 16px;
+}
+
+.metricas,
+.pendencias {
+  display: grid;
+  gap: var(--espaco);
+  margin-bottom: var(--espaco);
+}
+
+.metricas { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.pendencias { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.metrica,
+.secao {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow);
+  min-width: 0;
+}
+
+.metrica {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 106px;
+  padding: 16px;
+  color: var(--ds-text);
+}
+
+a.metrica:hover {
+  border-color: currentColor;
+  text-decoration: none;
+}
+
+.metrica:focus-visible,
+.atalho:focus-visible,
+.itemLivro:focus-visible {
+  outline: 2px solid var(--ds-brand);
+  outline-offset: 3px;
+}
+
+.alerta {
+  background: var(--ds-bg-danger);
+  color: var(--ds-danger-hover);
+}
+
+.fila {
+  background: var(--ds-bg-brand);
+  color: var(--ds-brand-pressed);
+}
+
+.rotulo {
+  color: var(--ds-text-subtle);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.alerta .rotulo,
+.fila .rotulo { color: inherit; }
+
+.valor {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.valor strong {
+  font-size: 34px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.setaMetrica {
+  margin-left: auto;
+  font-size: 18px;
+}
+
+.secao { scroll-margin-top: 16px; }
+.secao:target { border-color: var(--ds-brand); }
+
+.cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--ds-border);
+}
+
+.cabecalho h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.cabecalho p {
+  margin: 4px 0 0;
+  color: var(--ds-text-subtle);
+  font-size: 13px;
+}
+
+.atalho {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0 18px;
+}
+
+.linha,
+.linhaRanking {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 0;
+}
+
+.linha { grid-template-columns: minmax(0, 1fr) auto; }
+.linhaRanking { grid-template-columns: 24px minmax(0, 1fr) minmax(80px, 28%) minmax(112px, auto); }
+.lista li + li { border-top: 1px solid var(--ds-border); }
+
+.itemLivro,
+.leitor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+  color: var(--ds-text);
+  overflow-wrap: anywhere;
+}
+
+.itemLivro:hover { color: var(--ds-link); }
+.itemLivro > :first-child { flex-shrink: 0; }
+
+.identidade {
+  display: grid;
+  gap: 2px;
+}
+
+.identidade small {
+  color: var(--ds-text-subtle);
+  font-size: 12px;
+}
+
+.contagem {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.contagemAtraso {
+  background: var(--ds-bg-danger);
+  color: var(--ds-danger-hover);
+}
+
+.contagemFila {
+  background: var(--ds-bg-brand);
+  color: var(--ds-brand-pressed);
+}
+
+.posicao {
+  color: var(--ds-text-subtlest);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.barra {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ds-bg-brand);
+}
+
+.barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ds-brand);
+}
+
+.totalRanking {
+  color: var(--ds-text-subtle);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.estado {
+  margin: 0;
+  padding: 18px;
+  color: var(--ds-text-subtle);
+}
+
+@media (max-width: 760px) {
+  .metricas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pendencias { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 500px) {
+  .painel { --espaco: 12px; }
+  .metrica { padding: 12px; }
+  .valor strong { font-size: 28px; }
+  .cabecalho { padding: 14px; }
+  .lista { padding: 0 14px; }
+  .linhaRanking {
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  .barra { display: none; }
+  .totalRanking { max-width: 76px; }
+}
